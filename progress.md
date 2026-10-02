@@ -15,3 +15,4 @@ Final: Ruling: authoritative anti-cheat engine reimplementation is outside reque
 Final: animation cancellation was tested in actual mid-animation departure and replacement; concern resolved. Packaging completeness will be verified in the final delivery copy.
 Final: Ruling: keep isolated source branch and deliver portable files; user delegated implementation and no remote Git repository exists — cost if wrong: later changes use delivered source instead of original archive.
 Delivery: fixed Windows launcher UTF-8/LF parsing failure — actual bundled launcher HTTP startup test RED→GREEN after CRLF normalization; added .gitattributes to preserve it.
+Task 5: complete — portable folder and ZIP; actual delivered Windows launcher serves HTTP; delivered Node21/21, preservation3/3, complete browser victory/reselection/disconnect and bonus1/2 scenarios pass. Original Downloads unchanged; owned test servers stopped after validation.

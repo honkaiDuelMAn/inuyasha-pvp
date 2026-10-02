@@ -15,7 +15,7 @@ def package(destination):
         shutil.copytree(ROOT / name, destination / name, dirs_exist_ok=True,
                         ignore=shutil.ignore_patterns('__pycache__', '*.map'))
     shutil.copytree(ROOT / 'node_modules/ws', destination / 'node_modules/ws', dirs_exist_ok=True)
-    for name in ['package.json', 'README.txt', 'THIRD-PARTY.txt', '호스트-실행.cmd', '검증결과.txt']:
+    for name in ['.gitattributes', 'package.json', 'README.txt', 'THIRD-PARTY.txt', '호스트-실행.cmd', '검증결과.txt']:
         shutil.copyfile(ROOT / name, destination / name)
     manifest = {}
     for path in sorted(destination.rglob('*')):
