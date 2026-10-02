@@ -34,6 +34,9 @@ b.start = function(match, idsText, cardsText) {
     this.match = Number(match);
     this.round = 1;
     this.phase = "loading";
+    // Match the original userDoneWithVersus audio transition.
+    g.soundManager.stop({id:"themeSong"});
+    g.soundManager.stop({id:"youDie"});
     g.viewPickCharacter.hidePickCharacter();
     g.viewVersus.hide();
     g.viewRound.hide();

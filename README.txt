@@ -1,5 +1,9 @@
 이누야샤 데몬 토너먼트 · 원본 리소스 1대1 PvP
 
+버전 1.0.1: PvP 경기 시작 때 타이틀/직전 승패 음악이 계속 재생되던 문제를 수정했습니다.
+이미 이전 버전을 사용한다면 public/game/pvp-bridge.swf만 새 파일로 덮어쓰고
+양쪽 브라우저를 새로고침하여 새 경기를 시작해도 됩니다.
+
 시작하기
 1. ZIP을 전부 압축 해제합니다. 호스트 PC에서 '호스트-실행.cmd'를 실행합니다.
 2. Chrome 또는 Edge에서 http://localhost:8787 을 엽니다. '방 만들기'를 누릅니다.
@@ -72,6 +76,10 @@ python tests/build_test.py
   필요하면 CHROME_PATH, PLAYWRIGHT_PATH, PVP_ORIGIN을 지정합니다.
 전체 경기를 실제 원본 게임 화면의 클릭으로 진행합니다. 일부 판정은 검증 로그에 기록됩니다.
 추가카드 검증은 별도 테스트 서버를 자동으로 시작해 1장/2장과 금강 조합을 확인합니다.
+음악 검증은 아래 관측용 모듈을 먼저 빌드한 뒤 실행합니다(Java와 JPEXS 필요):
+  python tools/audio_probe.py --java java.exe경로 --ffdec ffdec.jar경로
+  node tests/audio-browser.cjs
+관측용 모듈은 테스트 브라우저에만 주입하며 실제 배포 게임에는 포함하지 않습니다.
 
 다시 빌드하기 (개발자용)
 Python, Java, JPEXS FFDec가 필요합니다. 배포본 실행에는 필요 없습니다.
