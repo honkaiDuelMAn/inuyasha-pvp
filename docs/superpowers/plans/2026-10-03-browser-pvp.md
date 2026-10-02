@@ -23,23 +23,23 @@ No connection servers including STUN or TURN; `iceServers: []`. No new game engi
 
 Files: public/net/room-rules.mjs, public/net/catalog.mjs, server/rooms.mjs, tools/build.py, tests/browser-rules.cjs.
 Interface: preserve RoomService, catalog, drawBonus, validateMoves exports; use browser crypto randomness.
-- [ ] Write browser import/room creation test and run to observe missing-module failure.
-- [ ] Extract unchanged room logic and original catalog, remove Node dependencies and inject default browser crypto.
-- [ ] Run browser test and the existing room/server suite; commit.
+- [x] Write browser import/room creation test and run to observe missing-module failure.
+- [x] Extract unchanged room logic and original catalog, remove Node dependencies and inject default browser crypto.
+- [x] Run browser test and the existing room/server suite; commit.
 
 ## Task 2: Manual connection and shared UI transport
 
 Files: public/net/manual-peer.mjs, public/net/direct-room.mjs, public/direct.html, public/direct-ui.mjs, public/app.mjs, public/index.html, public/style.css, tests/direct-browser.cjs.
 Interface: createDirectRoom({onEvent,onStatus}) returns create(count), join(code), accept(code), newInvite(), send(event), close(), role, roomCode. ManualPeer exposes offer/answer/accept and data events with empty ICE server list.
-- [ ] Write actual static two-context invitation/answer test; reject invalid input, mismatched/stale answer, verify no WebSocket/API/STUN/TURN requests, cancellation and timeout.
-- [ ] Run RED then implement peer transport and browser room authority, queued host events and guarded guest messages.
-- [ ] Add dedicated Korean static UI for full invitation/response codes, cancellation/retry and replacement. Adapt app transport and relative resources; retain Node entry.
-- [ ] Run GREEN through actual original victory, 3 shared bonuses, reselection with 0, departure/replacement, and existing Node browser regressions; commit.
+- [x] Write actual static two-context invitation/answer test; reject invalid input, mismatched/stale answer, verify no WebSocket/API/STUN/TURN requests, cancellation and timeout.
+- [x] Run RED then implement peer transport and browser room authority, queued host events and guarded guest messages.
+- [x] Add dedicated Korean static UI for full invitation/response codes, cancellation/retry and replacement. Adapt app transport and relative resources; retain Node entry.
+- [x] Run GREEN through actual original victory, 3 shared bonuses, reselection with 0, departure/replacement, and existing Node browser regressions; commit.
 
 ## Task 3: Static publication
 
 Files: tools/pages.py, .github/workflows/pages.yml, README.txt, web README, THIRD-PARTY.txt, verification report.
-- [ ] Stage static-only public files with direct.html renamed index.html; verify the nested-path artifact using the browser suite.
-- [ ] Final fresh review required by executing-plans; fix material findings with RED/GREEN.
-- [ ] Commit and push the new public repository including required assets and licenses. Enable Pages and deploy through the official workflow.
-- [ ] Verify deployed URL and real browser two-way connection/combat there. Package a standalone static deliverable and report network restrictions and tested scope.
+- [x] Stage static-only public files with direct.html renamed index.html; verify the nested-path artifact using the browser suite.
+- [x] Final fresh review required by executing-plans; fix material findings with RED/GREEN.
+- [x] Commit and push the new public repository including required assets and licenses. Enable Pages and deploy through the official workflow.
+- [x] Verify deployed URL and real browser two-way connection/combat there. Package a standalone static deliverable and report network restrictions and tested scope.
