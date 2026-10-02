@@ -24,6 +24,8 @@ window.inuyashaDirect={
   send:event=>{if(event.type==='leave'){sequence++;busy(false);}session.send(event);},
 };
 app=await import('./app.mjs');
+busy(false);$('original').disabled=false;
+app.message('방을 만들거나 전체 초대 코드로 참가하세요. 원본 게임도 실행할 수 있습니다.');
 $('answerForm').addEventListener('submit',async event=>{
   event.preventDefault();$('acceptAnswer').disabled=true;
   try{await session.accept($('responseCode').value);}catch(error){app.message(error.message,true);}finally{$('acceptAnswer').disabled=false;}
