@@ -52,11 +52,13 @@ def build(source_root, java, ffdec):
     # Compiler receives a separate one-frame movie; originals never go through it.
     empty = scratch / 'empty.swf'
     empty.write_bytes(serialize(header[:-2] + b'\x01\x00', [(12, b'\x01\x03\x00'), (1, b'\x40\x00'), (0, b'\x00\x00')]))
-    compiled = scratch / 'bridge.swf'
-    result = subprocess.run([str(java), '-Djava.awt.headless=true', '-jar', str(ffdec), '-replace', str(empty), str(compiled), r'\frame_1\DoAction', str(ROOT / 'flash/pvp.as')], capture_output=True, text=True)
-    (scratch / 'compiler.log').write_text(result.stdout + result.stderr, encoding='utf8')
-    if result.returncode or not compiled.exists():
-        raise RuntimeError('Bridge compilation failed; see scratch/build/compiler.log')
+    def compile_movie(input_path, output_path, source):
+        result = subprocess.run([str(java), '-Djava.awt.headless=true', '-jar', str(ffdec), '-replace', str(input_path), str(output_path), r'\frame_1\DoAction', str(source)], capture_output=True, text=True)
+        (scratch / (source.stem + '-compiler.log')).write_text(result.stdout + result.stderr, encoding='utf8')
+        if result.returncode or not output_path.exists():
+            raise RuntimeError('Compilation failed; see scratch/build/' + source.stem + '-compiler.log')
+    compiled = scratch / 'loader.swf'
+    compile_movie(empty, compiled, ROOT / 'flash/loader.as')
     action = next(tag for tag in split_tags(unpack(compiled))[1] if tag[0] == 12)
     if len(action[1]) < 30:
         raise RuntimeError('Compiler produced no bridge code')
@@ -70,6 +72,9 @@ def build(source_root, java, ffdec):
             frame += 1
     output = ROOT / 'public/game'
     (output / 'characters').mkdir(parents=True, exist_ok=True)
+    bridge_input = scratch / 'empty8.swf'
+    bridge_input.write_bytes(serialize(header[:3] + b'\x08' + header[4:-2] + b'\x01\x00', [(12, b'\x01\x03\x00'), (1, b'\x40\x00'), (0, b'\x00\x00')]))
+    compile_movie(bridge_input, output / 'pvp-bridge.swf', ROOT / 'flash/pvp.as')
     (output / 'game-pvp.swf').write_bytes(serialize(header, patched, True))
     shutil.copyfile(source_root / 'game.swf', output / 'game-original.swf')
     for path in source_root.glob('*_figure.swf'):

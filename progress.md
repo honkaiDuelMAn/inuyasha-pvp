@@ -4,3 +4,4 @@ Ruling: User delegated engine choice and explicitly said to proceed; retain writ
 Ruling: This archive is not a Git repository. Use a new isolated project under this chat's work directory; do not alter the Downloads original.
 Ruling: Preserve original character-specific card compatibility. Draw from the intersection of both selected characters' original bonus pools. Cost if wrong: user may prefer all summons unlocked; this would require animation/card compatibility work.
 Pre-flight: Tasks 1/3/4 share bridge protocol; Tasks 2/3/4 share room events. Exact callback and event names are defined by the plan and will be tested through real browser and socket integration.
+Task 2: complete — 16/16 real room-rule tests pass; zero-card RNG, shared bonuses, 64 character pairs, sealed hands, reselection and disconnect.
