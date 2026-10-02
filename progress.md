@@ -14,3 +14,4 @@ Final: Ruling: external two-PC reachability is environment-dependent — documen
 Final: Ruling: authoritative anti-cheat engine reimplementation is outside requested original-preserving design — compare both actual engines; cost if wrong: modified clients are not secured for ranked competitive use.
 Final: animation cancellation was tested in actual mid-animation departure and replacement; concern resolved. Packaging completeness will be verified in the final delivery copy.
 Final: Ruling: keep isolated source branch and deliver portable files; user delegated implementation and no remote Git repository exists — cost if wrong: later changes use delivered source instead of original archive.
+Delivery: fixed Windows launcher UTF-8/LF parsing failure — actual bundled launcher HTTP startup test RED→GREEN after CRLF normalization; added .gitattributes to preserve it.
