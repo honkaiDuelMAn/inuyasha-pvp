@@ -1,6 +1,6 @@
 stop();
 var gameRoot = _level0;
-var g = Object.$POP;
+var g = gameRoot.pvpgame;
 var b = gameRoot.pvpBridge = {seat:0, match:0, round:0, phase:"selecting", timer:0};
 var ei = flash.external.ExternalInterface;
 b.emit = function(kind, data) { flash.external.ExternalInterface.call("pvpEvent", kind, data); };

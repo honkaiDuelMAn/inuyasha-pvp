@@ -1,11 +1,12 @@
 import hashlib
+import json
 import struct
 import unittest
 import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ORIGINAL = Path(r'C:\Users\whdhk\Downloads\inuyasha\InuYasha_Demon_Tournament_SWF_Archive')
+HASHES = json.loads((ROOT / 'tools/original-hashes.json').read_text(encoding='utf8'))
 
 
 def tags(path):
@@ -30,7 +31,7 @@ def tags(path):
 
 class Preservation(unittest.TestCase):
     def test_all_original_tags_are_byte_identical_with_only_one_inserted_action(self):
-        baseline = tags(ORIGINAL / 'game.swf')
+        baseline = tags(ROOT / 'public/game/game-original.swf')
         patched = tags(ROOT / 'public/game/game-pvp.swf')
         self.assertEqual(len(patched), len(baseline) + 1)
         frame = 1
@@ -49,9 +50,15 @@ class Preservation(unittest.TestCase):
         self.assertEqual(filtered, baseline)
 
     def test_original_mode_and_character_files_are_unchanged(self):
-        for path in ORIGINAL.glob('*.swf'):
-            target = ROOT / 'public/game' / ('game-original.swf' if path.name == 'game.swf' else 'characters/' + path.name)
-            self.assertEqual(hashlib.sha256(target.read_bytes()).digest(), hashlib.sha256(path.read_bytes()).digest())
+        self.assertEqual(len(HASHES), 12)
+        for name, expected in HASHES.items():
+            target = ROOT / 'public/game' / ('game-original.swf' if name == 'game.swf' else 'characters/' + name)
+            self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(), expected)
+
+    def test_flash_versions_preserve_original_execution_rules(self):
+        for name in ['game-original.swf', 'game-pvp.swf']:
+            self.assertEqual((ROOT / 'public/game' / name).read_bytes()[3], 6)
+        self.assertEqual((ROOT / 'public/game/pvp-bridge.swf').read_bytes()[3], 8)
 
 
 if __name__ == '__main__':

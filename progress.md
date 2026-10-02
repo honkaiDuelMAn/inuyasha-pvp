@@ -5,3 +5,4 @@ Ruling: This archive is not a Git repository. Use a new isolated project under t
 Ruling: Preserve original character-specific card compatibility. Draw from the intersection of both selected characters' original bonus pools. Cost if wrong: user may prefer all summons unlocked; this would require animation/card compatibility work.
 Pre-flight: Tasks 1/3/4 share bridge protocol; Tasks 2/3/4 share room events. Exact callback and event names are defined by the plan and will be tested through real browser and socket integration.
 Task 2: complete — 16/16 real room-rule tests pass; zero-card RNG, shared bonuses, 64 character pairs, sealed hands, reselection and disconnect.
+Task 1: complete — original Flash 6 header and all 1459 tags unchanged; Flash 8 bridge registered callbacks and sent ready in actual Ruffle. Task 3: 17/17 room and real HTTP/WebSocket integration tests pass; browser gameplay validation in progress.
