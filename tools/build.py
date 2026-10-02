@@ -85,6 +85,8 @@ def build(source_root, java, ffdec):
         moves.append({'id': move.get('ID'), 'name': move.get('NAME'), 'characters': move.get('CHARACTERS').split(','), 'advanced': move.get('ADVANCED') == '1', 'energy': int(move.find('USERIMPACT').get('ENERGY'))})
     (ROOT / 'server').mkdir(exist_ok=True)
     (ROOT / 'server/catalog.json').write_text(json.dumps(moves, indent=2), encoding='utf8')
+    (ROOT / 'public/net').mkdir(exist_ok=True)
+    (ROOT / 'public/net/catalog.mjs').write_text('export const catalog = ' + json.dumps(moves, indent=2) + ';\n', encoding='utf8')
     print(f'Built game-pvp.swf: {len(tags)} unchanged tags + one PvP action; {len(moves)} original move definitions.')
 
 
