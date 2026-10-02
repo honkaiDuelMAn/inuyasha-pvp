@@ -17,7 +17,9 @@ export function validateMoves(ids, available, energy) {
   if (!Array.isArray(ids) || ids.length !== 3 || new Set(ids).size !== 3 || ids.some(id => !available.includes(id) || !byId.has(id))) return false;
   let remaining = energy;
   for (const id of ids) {
-    remaining = Math.min(100, remaining + byId.get(id).energy);
+    // The original picker budgets the hand without the combat engine's 100 cap.
+    // The original engine still decides whether each action can execute.
+    remaining += byId.get(id).energy;
     if (remaining < 0) return false;
   }
   return true;
@@ -58,7 +60,11 @@ export class RoomService {
     this.rooms.delete(room.code);
   }
   handle(client, message) {
-    try { this.process(client, message); } catch (error) { this.send(client, { type: 'error', message: error.message }); }
+    try { this.process(client, message); } catch (error) {
+      const membership = this.members.get(client.id), room = membership?.room;
+      const retryMoves = message?.type === 'moves' && room?.phase === 'picking' && !room.hands[membership.seat] && message.match === room.match && message.round === room.round;
+      this.send(client, { type: 'error', message: error.message, ...(retryMoves ? { retryMoves: true, match: room.match, round: room.round } : {}) });
+    }
   }
   process(client, m) {
     if (!m || Array.isArray(m) || typeof m !== 'object' || typeof m.type !== 'string') throw Error('잘못된 메시지입니다.');
@@ -93,6 +99,11 @@ export class RoomService {
     if (m.type === 'character') {
       if (room.phase !== 'selecting' || !characters.includes(m.character)) throw Error('지금은 캐릭터를 선택할 수 없습니다.');
       player.character = m.character; player.ready = false; this.notify(room); return;
+    }
+    if (m.type === 'selectCharacter') {
+      if (room.phase !== 'selecting') throw Error('이미 경기가 시작되어 캐릭터를 바꿀 수 없습니다.');
+      player.character = null; player.ready = false;
+      this.send(client, { type: 'selectCharacter' }); this.notify(room); return;
     }
     if (m.type === 'ready') {
       if (room.phase !== 'selecting' || !player.character) throw Error('먼저 캐릭터를 선택하세요.');

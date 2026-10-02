@@ -85,6 +85,12 @@ b.play = function(match, round, hand0Text, hand1Text) {
     g.gameManager.newMoves({moves:moves});
     return true;
 };
+b.retry = function(match, round) {
+    if (Number(match) != this.match || Number(round) != this.round || this.phase != "submitted") { return false; }
+    this.phase = "picking";
+    g.gameManager.pvpOriginalRequest.call(g.gameManager);
+    return true;
+};
 g.movieMediator.userPickedCharacter = function(args) {
     if (b.phase != "selecting") { return; }
     g.viewPickCharacter.hidePickCharacter();
@@ -128,4 +134,5 @@ ei.addCallback("pvpStart",b,b.start);
 ei.addCallback("pvpPlay",b,b.play);
 ei.addCallback("pvpNext",b,b.next);
 ei.addCallback("pvpReset",b,b.reset);
+ei.addCallback("pvpRetry",b,b.retry);
 b.emit("ready",{});

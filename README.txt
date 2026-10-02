@@ -68,8 +68,10 @@ runtime\node.exe --test tests/*.test.mjs
 python tests/build_test.py
 브라우저 검증은 Playwright 설치 후 서버를 켜고 실행합니다:
   node tests/browser.cjs
+  node tests/bonus-browser.cjs
   필요하면 CHROME_PATH, PLAYWRIGHT_PATH, PVP_ORIGIN을 지정합니다.
 전체 경기를 실제 원본 게임 화면의 클릭으로 진행합니다. 일부 판정은 검증 로그에 기록됩니다.
+추가카드 검증은 별도 테스트 서버를 자동으로 시작해 1장/2장과 금강 조합을 확인합니다.
 
 다시 빌드하기 (개발자용)
 Python, Java, JPEXS FFDec가 필요합니다. 배포본 실행에는 필요 없습니다.

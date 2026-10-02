@@ -36,7 +36,11 @@ function clearRoom() {
   $('bonusList').textContent = ''; render();
 }
 function handle(event) {
-  if (event.type === 'error') { message(event.message, true); return; }
+  if (event.type === 'error') {
+    if (event.retryMoves) bridge('pvpRetry', event.match, event.round);
+    message(event.message, true); return;
+  }
+  if (event.type === 'selectCharacter') { if (bridge('pvpSelect')) { changing = true; render(); } return; }
   if (event.type === 'joined') {
     code = event.code; seat = event.seat;
     $('code').textContent = code; $('seat').textContent = `${seat + 1}P${seat === 0 ? ' · 호스트' : ''}`;
@@ -92,7 +96,7 @@ $('create').addEventListener('click', async () => { try { await connect(); send(
 $('joinForm').addEventListener('submit', async event => { event.preventDefault(); try { await connect(); send({ type: 'join', code: $('roomCode').value }); } catch (error) { message(error.message, true); } });
 $('bonusCount').addEventListener('change', () => send({ type: 'configure', bonusCount: Number($('bonusCount').value) }));
 $('ready').addEventListener('click', () => send({ type: 'ready' }));
-$('change').addEventListener('click', () => { if (bridge('pvpSelect')) { changing = true; render(); } });
+$('change').addEventListener('click', () => send({type:'selectCharacter'}));
 $('rematch').addEventListener('click', () => send({ type: 'rematch' }));
 $('leave').addEventListener('click', () => send({ type: 'leave' }));
 $('original').addEventListener('click', async () => { if (room) send({ type: 'leave' }); mode = 'original'; await loadGame('original'); message('원본 모드입니다. 원래 방식대로 플레이하세요.'); });

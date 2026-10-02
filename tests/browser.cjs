@@ -6,17 +6,17 @@ async function gameClick(page, x, y) {
   const game = page.locator('ruffle-player'), box = await game.boundingBox();
   await game.click({position:{x:x*box.width/432, y:y*box.height/330}});
 }
-async function newPlayer(browser) {
+async function newPlayer(browser, url=origin) {
   const context = await browser.newContext({viewport:{width:1280,height:1100}});
   await context.addInitScript(() => {
     window.__gameEvents=[]; window.__networkEvents=[];
     let handler;
-    Object.defineProperty(window,'pvpEvent',{configurable:true,set(fn){handler=fn;},get(){return (...args)=>{window.__gameEvents.push(JSON.parse(JSON.stringify(args)));return handler?.(...args);};}});
+    Object.defineProperty(window,'pvpEvent',{configurable:true,set(fn){handler=fn;},get(){return (...args)=>{window.__gameEvents.push(JSON.parse(JSON.stringify(args)));if(args[0]==='moves'&&window.__rejectNextHand){window.__rejectNextHand=false;args[1]={...args[1],moves:['bad','guard','energyUp']};}return handler?.(...args);};}});
     const NativeSocket=window.WebSocket;
     window.WebSocket=class extends NativeSocket {constructor(...args){super(...args);this.addEventListener('message', e=>window.__networkEvents.push(JSON.parse(e.data)));}};
   });
   const page=await context.newPage();page.on('pageerror',e=>console.log('JS ERROR',e.message));
-  await page.goto(origin);return page;
+  await page.goto(url);return page;
 }
 async function boot(page) {
   await page.locator('ruffle-player').waitFor();
@@ -38,7 +38,8 @@ async function hand(page, points) {
   for(const [x,y] of points) await gameClick(page,x,y);
   await gameClick(page,245,295);
 }
-(async()=>{
+module.exports={gameClick,newPlayer,boot,hand,finishRound};
+if(require.main===module) (async()=>{
   fs.mkdirSync('scratch/browser',{recursive:true});
   const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||`${process.env.PROGRAMFILES}/Google/Chrome/Application/chrome.exe`,headless:true,args:['--autoplay-policy=no-user-gesture-required']});
   const pages=[];
@@ -48,14 +49,21 @@ async function hand(page, points) {
     const guest=await newPlayer(browser);pages.push(guest);await guest.getByRole('textbox',{name:'방 코드',exact:true}).fill(code);await guest.getByRole('button',{name:'참가',exact:true}).click();await boot(guest);
     await gameClick(host,100,140);await gameClick(guest,170,140);
     await host.waitForFunction(()=>__gameEvents.some(e=>e[0]==='character'),{},{timeout:4000});
-    await host.locator('#ready').click();await guest.locator('#ready').click();
+    await host.locator('#ready').click();await host.locator('#change').click();
+    await host.waitForFunction(()=>document.getElementById('player0').textContent.includes('캐릭터 선택 중'));
+    await guest.locator('#ready').click();
+    assert.equal(await host.locator('#roomPanel').getAttribute('data-phase'),'selecting');
+    await gameClick(host,100,140);await host.locator('#ready').click();
     await Promise.all(pages.map(p=>p.locator('#roomPanel[data-phase="picking"]').waitFor({timeout:20000})));
     const a=await host.evaluate(()=>__networkEvents.find(e=>e.type==='start')), b=await guest.evaluate(()=>__networkEvents.find(e=>e.type==='start'));
     assert.deepEqual(a.characters,['i','ke']);assert.deepEqual(a.bonusCards,b.bonusCards);assert.equal(a.bonusCards.length,3);
     await host.screenshot({path:'scratch/browser/picking-host.png',fullPage:true});await guest.screenshot({path:'scratch/browser/picking-guest.png',fullPage:true});
     console.log('PASS actual two-browser start, separate characters, three shared bonus cards.');
     for (const p of pages) await gameClick(p,358,82);
-    for (const p of pages) {for (const [x,y] of [[216,60],[341,60],[92,110]]) await gameClick(p,x,y);await gameClick(p,245,295);}
+    await host.evaluate(()=>window.__rejectNextHand=true);
+    await hand(host,[[216,60],[341,60],[92,110]]);
+    await host.waitForFunction(()=>__networkEvents.some(e=>e.type==='error'&&e.retryMoves));
+    for (const p of pages) await hand(p,[[216,60],[341,60],[92,110]]);
     await Promise.all(pages.map(p=>p.waitForFunction(()=>__gameEvents.some(e=>e[0]==='resolved'),{},{timeout:10000})));
     const reports=await Promise.all(pages.map(p=>p.evaluate(()=>__gameEvents.find(e=>e[0]==='resolved')[1])));
     assert.deepEqual(reports[0],reports[1]);console.log('PASS actual original-engine combat reports agree.',JSON.stringify(reports[0]));
@@ -89,6 +97,17 @@ async function hand(page, points) {
     assert.deepEqual(same[0],same[1]);assert.deepEqual(same[0].players.map(p=>p.life),[100,100]);assert.deepEqual(same[0].players.map(p=>p.energy),[100,100]);
     await finishRound(pages,1);
     console.log('PASS same-character rematch combat, clean life/energy, next-round barrier.');
+    for(const p of pages) await hand(p,[[216,60],[341,60],[341,110]]);
+    await host.waitForFunction(()=>__gameEvents.some(e=>e[0]==='resolved'&&e[1].match===2&&e[1].round===2));
+    await guest.locator('#leave').click();
+    await host.locator('#roomPanel[data-phase="selecting"]').waitFor();
+    await host.waitForTimeout(10000);
+    await gameClick(host,170,140);
+    await host.waitForFunction(()=>document.getElementById('player0').textContent.includes('가영'),{},{timeout:3000});
+    await guest.getByRole('textbox',{name:'방 코드',exact:true}).fill(code);await guest.getByRole('button',{name:'참가',exact:true}).click();
+    await gameClick(guest,100,140);await host.locator('#ready').click();await guest.locator('#ready').click();
+    await Promise.all(pages.map(p=>p.locator('#roomPanel[data-phase="picking"][data-match="3"]').waitFor({timeout:20000})));
+    console.log('PASS mid-animation disconnect resets original engine and accepts replacement.');
   } catch(error) {
     for(let i=0;i<pages.length;i++) {await pages[i].screenshot({path:`scratch/browser/failure-${i}.png`,fullPage:true}); console.log('DIAGNOSTIC',i,JSON.stringify(await pages[i].evaluate(()=>({game:__gameEvents,network:__networkEvents,message:document.getElementById('message').textContent}))));}
     throw error;

@@ -1,0 +1,22 @@
+실행 구성요소
+
+Ruffle 0.6.0 (공식 self-hosted 배포)
+https://ruffle.rs/
+https://github.com/ruffle-rs/ruffle/releases/tag/v0.6.0
+MIT OR Apache-2.0. 원문: public/ruffle/LICENSE_MIT, LICENSE_APACHE.
+
+Node.js 24.19.0 / Windows x64
+https://nodejs.org/
+MIT 및 포함된 타사 구성요소의 라이선스. 원문 전체: runtime/LICENSE.txt.
+
+ws 8.22.0
+https://github.com/websockets/ws
+MIT. 원문: node_modules/ws/LICENSE.
+
+게임 SWF는 사용자가 제공한 이누야샤 데몬 토너먼트 아카이브를 사용했습니다.
+기존 파일의 저작권은 각 원권리자에게 있습니다. 이 문서는 게임 리소스에 새 라이선스를
+부여하지 않습니다. 원본 12개 파일의 검증 해시: tools/original-hashes.json.
+
+소스 재빌드에는 JPEXS Free Flash Decompiler 26.3.0을 사용했습니다.
+https://github.com/jindrapetrik/jpexs-decompiler
+GPLv3+ 도구이며 배포 실행 폴더에 포함하지 않았습니다.

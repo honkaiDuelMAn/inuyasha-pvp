@@ -130,3 +130,29 @@ test('move validation rejects duplicates, unavailable moves and over-budget ener
   assert.equal(validateMoves(['energyUp', 'spiritPower', 'guard'], ['energyUp', 'spiritPower', 'guard'], 0), true);
   assert.equal(validateMoves(['spiritPower', 'energyUp', 'guard'], ['energyUp', 'spiritPower', 'guard'], 0), false);
 });
+
+test('original picker accepts energyUp, Kikyo, spiritPower at full energy', () => {
+  const moves = ['energyUp', 'kikyosRevenge', 'spiritPower'];
+  assert.equal(validateMoves(moves, moves, 100), true);
+});
+
+test('rejected hand provides a current-round retry and can be submitted again', () => {
+  const ctx = setup();
+  ctx.service.handle(ctx.host, {type:'moves',match:ctx.match,round:1,moves:['bad','guard','energyUp']});
+  const error = last(ctx.host,'error');
+  assert.equal(error.retryMoves,true);assert.equal(error.match,ctx.match);assert.equal(error.round,1);
+  ctx.service.handle(ctx.host, {type:'moves',match:ctx.match,round:1,moves:['moveRight','guard','energyUp']});
+  assert.equal(last(ctx.host,'room').submitted[0],true);
+});
+
+test('reopening character selection cancels ready before opponent can start', () => {
+  const service=new RoomService();const host=client('h'),guest=client('g');
+  service.handle(host,{type:'create',bonusCount:0});
+  service.handle(guest,{type:'join',code:last(host,'joined').code});
+  for(const c of [host,guest]) service.handle(c,{type:'character',character:'i'});
+  service.handle(host,{type:'ready'});service.handle(host,{type:'selectCharacter'});service.handle(guest,{type:'ready'});
+  const room=last(host,'room');assert.equal(room.phase,'selecting');assert.equal(room.players[0].ready,false);assert.equal(room.players[0].character,null);
+  assert.ok(last(host,'selectCharacter'));assert.equal(last(host,'start'),undefined);
+  service.handle(host,{type:'character',character:'ke'});service.handle(host,{type:'ready'});
+  assert.deepEqual(last(host,'start').characters,['ke','i']);
+});
