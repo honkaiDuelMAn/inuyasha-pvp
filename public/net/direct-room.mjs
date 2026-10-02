@@ -49,8 +49,10 @@ export class DirectRoom {
   async join(text) {
     const offer=decodeCode(text);
     if(offer.kind!=='offer')throw Error('호스트의 전체 초대 코드를 입력하세요.');
+    if(this.role)throw Error('이미 연결 중입니다. 다른 초대에 참가하려면 먼저 연결 취소를 누르세요.');
     this.clear();this.role='guest';this.roomCode=offer.room;this.onStatus('gathering');
-    try{return await this.newPeer('guest').answer(text);}catch(error){this.clear();throw error;}
+    const generation=this.generation;
+    try{return await this.newPeer('guest').answer(text);}catch(error){if(generation===this.generation)this.clear();throw error;}
   }
   async accept(text) {if(this.role!=='host'||!this.peer)throw Error('먼저 초대 코드를 만드세요.');await this.peer.accept(text);}
   send(event) {

@@ -101,7 +101,7 @@ $('ready').addEventListener('click', () => send({ type: 'ready' }));
 $('change').addEventListener('click', () => send({type:'selectCharacter'}));
 $('rematch').addEventListener('click', () => send({ type: 'rematch' }));
 $('leave').addEventListener('click', () => send({ type: 'leave' }));
-$('original').addEventListener('click', async () => { if (room) send({ type: 'leave' }); mode = 'original'; await loadGame('original'); message('원본 모드입니다. 원래 방식대로 플레이하세요.'); });
+$('original').addEventListener('click', async () => { if (room || directTransport) send({ type: 'leave' }); mode = 'original'; await loadGame('original'); message('원본 모드입니다. 원래 방식대로 플레이하세요.'); });
 $('volume').addEventListener('input', () => { if (player) player.ruffle().volume = Number($('volume').value) / 100; });
 $('fullscreen').addEventListener('click', () => { if (player) player.ruffle().requestFullscreen(); });
 if (!directTransport) {

@@ -15,6 +15,7 @@ def stage(destination):
     shutil.copyfile(ROOT / 'public/direct.html', destination / 'index.html')
     shutil.copyfile(ROOT / 'THIRD-PARTY.txt', destination / 'THIRD-PARTY.txt')
     shutil.copyfile(ROOT / 'README.md', destination / 'README.md')
+    shutil.copyfile(ROOT / '검증결과.txt', destination / '검증결과.txt')
     (destination / '.nojekyll').touch()
     files = {p.relative_to(destination).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
              for p in sorted(destination.rglob('*')) if p.is_file() and p.name != 'web-hashes.json'}
