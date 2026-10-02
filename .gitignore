@@ -1,0 +1,7 @@
+node_modules/
+public/ruffle/
+public/game/
+runtime/
+scratch/
+__pycache__/
+.superpowers/
