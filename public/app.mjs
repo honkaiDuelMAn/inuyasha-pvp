@@ -88,7 +88,7 @@ function render() {
   $('ready').disabled = !gameReady || changing || !room.players[seat]?.character || room.players[seat]?.ready;
   $('change').disabled = !gameReady;
   $('rematch').hidden = room.phase !== 'result'; $('rematch').disabled = room.rematch[seat];
-  if (selecting) message(!gameReady ? '게임 화면의 PLAY를 누르고 NORMAL 또는 HARD를 선택하세요.' : !room.players[1] ? '캐릭터를 선택하고 초대 코드를 상대에게 공유하세요.' : room.players[seat]?.ready ? '상대가 준비를 마칠 때까지 기다립니다.' : changing || !room.players[seat]?.character ? '원본 게임 화면에서 원하는 캐릭터를 선택하세요.' : '캐릭터 선택이 끝났습니다. 준비 완료를 누르세요.');
+  if (selecting) message(!gameReady ? '게임 화면의 PLAY를 누르고 NORMAL 또는 HARD를 선택하세요.' : !room.players[1] ? (directTransport ? '캐릭터를 선택하고 초대 링크 또는 QR을 친구에게 보내세요.' : '캐릭터를 선택하고 초대 코드를 상대에게 공유하세요.') : room.players[seat]?.ready ? '상대가 준비를 마칠 때까지 기다립니다.' : changing || !room.players[seat]?.character ? '원본 게임 화면에서 원하는 캐릭터를 선택하세요.' : '캐릭터 선택이 끝났습니다. 준비 완료를 누르세요.');
   else if (room.phase === 'loading') message('양쪽 캐릭터를 불러오는 중입니다.');
   else if (room.phase === 'picking') message(room.submitted[seat] ? '카드를 제출했습니다. 상대의 선택을 기다립니다.' : `라운드 ${room.round} · 게임 화면에서 행동 카드 3장을 선택하세요.`);
   else if (room.phase === 'animating') message(room.finished[seat] ? '상대가 전투 화면을 끝낼 때까지 기다립니다.' : `라운드 ${room.round} · 원본 전투가 진행됩니다. NEXT TURN / CONTINUE로 진행하세요.`);

@@ -1,6 +1,12 @@
-웹 정적 배포에는 Ruffle과 게임 SWF만 포함합니다. Node.js와 ws는 기존 Windows 호스트 버전에만 사용합니다.
+웹 정적 배포에는 Ruffle, 게임 SWF, QR 생성 라이브러리를 포함합니다. Node.js와 ws는 기존 Windows 호스트 버전에만 사용합니다.
 
 실행 구성요소
+
+Nayuki QR Code generator 1.8.0 (공식 ES6 배포, ESM export만 추가)
+https://www.nayuki.io/page/qr-code-generator-library
+https://github.com/nayuki/QR-Code-generator/releases/tag/v1.8.0
+MIT. 라이선스 원문: public/vendor/qrcodegen.mjs 상단.
+공식 JS 파일 SHA-256: 6a1116192ed1dd67fa1bf31e77f5817103d71c23bbac24c382e698b7668bdd01.
 
 Ruffle 0.6.0 (공식 self-hosted 배포)
 https://ruffle.rs/

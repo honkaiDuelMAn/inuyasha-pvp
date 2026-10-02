@@ -6,8 +6,8 @@ async function gameClick(page, x, y) {
   const game = page.locator('ruffle-player'), box = await game.boundingBox();
   await game.click({position:{x:x*box.width/432, y:y*box.height/330}});
 }
-async function newPlayer(browser, url=origin) {
-  const context = await browser.newContext({viewport:{width:1280,height:1100}});
+async function newPlayer(browser, url=origin, options={}) {
+  const context = await browser.newContext({viewport:{width:1280,height:1100},...options});
   await context.addInitScript(() => {
     window.__gameEvents=[]; window.__networkEvents=[];
     let handler;
