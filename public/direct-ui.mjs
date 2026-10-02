@@ -14,7 +14,7 @@ const session=new DirectRoom({onEvent:event=>app.handle(event),onStatus:(state,d
 function busy(value){$('create').disabled=value;$('joinForm').querySelector('button').disabled=value;$('acceptAnswer').disabled=value;$('newInvite').disabled=value;}
 async function codeAction(action,label){
   const operation=++sequence;busy(true);
-  try{const code=await action();if(operation!==sequence)return;$('outputLabel').textContent=label;$('outputCode').value=code;$('responseCode').value='';}
+  try{const code=await action();if(operation!==sequence)return;$('outputLabel').textContent=`${label} (${code.length}자)`;$('outputCode').value=code;$('responseCode').value='';}
   catch(error){if(operation===sequence)throw error;}
   finally{if(operation===sequence)busy(false);}
 }

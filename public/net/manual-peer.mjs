@@ -1,21 +1,6 @@
-const LIMIT = 32768;
+import {encodeCode,decodeCode} from './connection-code.mjs';
+export {encodeCode,decodeCode};
 const failure = '직접 연결하지 못했습니다. 코드 교환을 다시 시도하세요. 서로 다른 인터넷 회선에서는 공유기가 연결을 막을 수 있습니다.';
-export function encodeCode(value) {
-  const bytes = new TextEncoder().encode(JSON.stringify(value));
-  return 'IY1-' + btoa(Array.from(bytes, b => String.fromCharCode(b)).join('')).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
-}
-export function decodeCode(text) {
-  if (typeof text !== 'string' || text.length > LIMIT) throw Error('연결 코드가 너무 깁니다.');
-  const code = text.trim();
-  if (!/^IY1-[A-Za-z0-9_-]+$/.test(code)) throw Error('6자리 방 번호 대신 전체 초대 또는 응답 코드를 붙여 넣으세요.');
-  let value;
-  try {
-    const raw = atob(code.slice(4).replaceAll('-', '+').replaceAll('_', '/'));
-    value = JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(Uint8Array.from(raw, c => c.charCodeAt(0))));
-  } catch { throw Error('연결 코드를 읽을 수 없습니다. 전체 코드를 다시 복사하세요.'); }
-  if (!value || value.version !== 1 || !['offer','answer'].includes(value.kind) || !/^[a-f0-9]{32}$/.test(value.session) || !/^[A-F0-9]{6}$/.test(value.room) || typeof value.sdp !== 'string' || value.sdp.length > 20000 || !value.sdp.startsWith('v=0\r\n')) throw Error('올바른 연결 코드가 아닙니다.');
-  return value;
-}
 export class ManualPeer {
   constructor({onMessage=()=>{},onState=()=>{},connectTimeout=180000}={}) {
     this.onMessage=onMessage;this.onState=onState;this.connectTimeout=connectTimeout;
@@ -69,7 +54,7 @@ export class ManualPeer {
       pc.addEventListener('icegatheringstatechange',changed);signal.addEventListener('abort',cancel,{once:true});changed();
     });
     if(this.closed)throw Error('연결을 취소했습니다.');
-    return encodeCode({version:1,kind:pc.localDescription.type,session:this.session,room:this.room,sdp:pc.localDescription.sdp});
+    return this.operation(encodeCode({version:1,kind:pc.localDescription.type,session:this.session,room:this.room,sdp:pc.localDescription.sdp},{legacy:this.legacyCode}));
   }
   startTimer() {clearTimeout(this.timer);this.timer=setTimeout(()=>this.fail(),this.connectTimeout);}
   operation(promise) {
@@ -89,14 +74,15 @@ export class ManualPeer {
     const code=await this.gather();this.onState('waiting-answer');return code;
   }
   async answer(text) {
-    const offer=decodeCode(text);if(offer.kind!=='offer')throw Error('방을 만든 사람의 초대 코드를 입력하세요.');
+    const offer=await decodeCode(text);if(offer.kind!=='offer')throw Error('방을 만든 사람의 초대 코드를 입력하세요.');
+    this.legacyCode=text.replace(/\s/g,'').startsWith('IY1-');
     this.session=offer.session;this.room=offer.room;const pc=this.setup();
     await this.operation(pc.setRemoteDescription({type:'offer',sdp:offer.sdp}));
     await this.operation(pc.setLocalDescription(await this.operation(pc.createAnswer())));
     const code=await this.gather();this.startTimer();this.onState('connecting');return code;
   }
   async accept(text) {
-    const answer=decodeCode(text);
+    const answer=await decodeCode(text);
     if(answer.kind!=='answer')throw Error('참가자가 보낸 응답 코드를 입력하세요.');
     if(answer.session!==this.session||answer.room!==this.room)throw Error('현재 초대에 대한 응답이 아닙니다. 새 초대 코드를 상대에게 보내세요.');
     if(this.closed||!this.pc||this.accepted)throw Error('이미 적용했거나 만료된 응답입니다.');

@@ -8,15 +8,15 @@ const {newPlayer}=require('./browser.cjs');
     const url=`http://127.0.0.1:${app.server.address().port}/direct.html`;
     const h=await newPlayer(browser,url),g=await newPlayer(browser,url);for(const p of [h,g])p.setDefaultTimeout(10000);
     async function pending(){
-      await h.locator('#create').click();await h.waitForFunction(()=>document.getElementById('outputCode').value.startsWith('IY1-'));
+      await h.locator('#create').click();await h.waitForFunction(()=>document.getElementById('outputCode').value.startsWith('IY2-'));
       const offer=await h.locator('#outputCode').inputValue();await g.locator('#roomCode').fill(offer);await g.locator('#joinForm button').click();
-      await g.waitForFunction(()=>document.getElementById('outputCode').value.startsWith('IY1-'));return {offer,answer:await g.locator('#outputCode').inputValue()};
+      await g.waitForFunction(()=>document.getElementById('outputCode').value.startsWith('IY2-'));return {offer,answer:await g.locator('#outputCode').inputValue()};
     }
     let {offer,answer}=await pending();
     await g.locator('#roomCode').fill('ABC123');await g.locator('#joinForm button').click();
     await g.waitForFunction(()=>document.getElementById('message').classList.contains('error'));
     assert.equal(await g.locator('#outputCode').inputValue(),answer,'invalid input must preserve response code');
-    const bad=await g.evaluate(async text=>{const {encodeCode,decodeCode}=await import('./net/manual-peer.mjs');return encodeCode({...decodeCode(text),sdp:'v=0\r\nthis is invalid'});},offer);
+    const bad=await g.evaluate(async text=>{const {encodeCode,decodeCode}=await import('./net/manual-peer.mjs');return encodeCode({...await decodeCode(text),sdp:'v=0\r\nthis is invalid'});},offer);
     await g.locator('#roomCode').fill(bad);await g.locator('#joinForm button').click();
     await g.waitForFunction(()=>document.getElementById('joinForm').querySelector('button').disabled===false);
     assert.equal(await g.locator('#outputCode').inputValue(),answer);
@@ -34,7 +34,7 @@ const {newPlayer}=require('./browser.cjs');
       const old=guest.join(offer).catch(()=>{});guest.close();const next=guest.create(0);await old;const code=await next;
       const result={role:guest.role,hasRoom:Boolean(guest.service?.rooms.size),code};host.close();guest.close();return result;
     });
-    assert.equal(race.role,'host');assert.equal(race.hasRoom,true);assert.match(race.code,/^IY1-/);
+    assert.equal(race.role,'host');assert.equal(race.hasRoom,true);assert.match(race.code,/^IY2-/);
     console.log('PASS canceled join failure cannot clear a newly created room.');
   }finally{await browser.close();await app.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

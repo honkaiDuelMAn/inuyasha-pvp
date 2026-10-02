@@ -47,7 +47,9 @@ export class DirectRoom {
     this.peer?.close(false);this.onStatus('gathering');return this.newPeer('host').offer(this.roomCode);
   }
   async join(text) {
-    const offer=decodeCode(text);
+    const initialGeneration=this.generation;
+    const offer=await decodeCode(text);
+    if(initialGeneration!==this.generation)throw Error('연결을 취소했습니다.');
     if(offer.kind!=='offer')throw Error('호스트의 전체 초대 코드를 입력하세요.');
     if(this.role)throw Error('이미 연결 중입니다. 다른 초대에 참가하려면 먼저 연결 취소를 누르세요.');
     this.clear();this.role='guest';this.roomCode=offer.room;this.onStatus('gathering');
