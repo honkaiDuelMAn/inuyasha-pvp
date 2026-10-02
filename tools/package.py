@@ -22,7 +22,7 @@ def package(destination):
         if path.is_file() and path.name != 'package-hashes.json':
             manifest[path.relative_to(destination).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
     (destination / 'package-hashes.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding='utf8')
-    archive = destination.with_suffix('.zip')
+    archive = destination.parent / (destination.name + '.zip')
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as bundle:
         for path in sorted(destination.rglob('*')):
             if path.is_file():
