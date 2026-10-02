@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><style>ruffle-player{width:460px;height:360px;display:block}</style>
+<div id="game"></div><script src="/ruffle/ruffle.js"></script><script>
+window.events=[]; window.pvpEvent=(...args)=>{events.push(args); console.log('PVP',JSON.stringify(args));};
+window.addEventListener('load', async()=>{
+ window.player=window.RufflePlayer.newest().createPlayer(); document.getElementById('game').append(player);
+ player.ruffle().traceObserver=(x)=>console.log('TRACE',x);
+ await player.ruffle().load({url:'/game/game-pvp.swf',base:'/game/',parameters:{pvp:'true'},allowScriptAccess:true,autoplay:'on',unmuteOverlay:'hidden',logLevel:'warn'});
+ player.ruffle().volume=0;
+});
+</script>
