@@ -1,7 +1,7 @@
 const $ = id => document.getElementById(id);
 const directTransport = window.inuyashaDirect;
 const names = { i: '이누야샤', ke: '가영', m: '미륵', ka: '카구라', n: '나락', s: '셋쇼마루', sa: '산고', ko: '코우가' };
-const cardNames = { perfectGuard: '완전방어', heal: '회복', kikyosRevenge: '금강', doubleRight: '두 칸 이동 →', doubleLeft: '두 칸 이동 ←', summonKirara: '키라라', summonDemons: '요괴 소환', summonJaken: '쟈켄', summonShippo: '싯포', summonWolves: '늑대 소환' };
+const cardNames = { perfectGuard: '완벽방어', heal: '치유', kikyosRevenge: '금강', doubleRight: '더블 라이트', doubleLeft: '더블 레프트', summonKirara: '키라라 소환', summonDemons: '요괴 소환', summonJaken: '자켄 소환', summonShippo: '싯포 소환', summonWolves: '늑대 소환' };
 let socket, player, mode, gameReady = false, room = null, seat = null, code = null, changing = false, match = null;
 export function message(text, error = false) { $('message').textContent = text; $('message').classList.toggle('error', error); }
 function bridge(name, ...args) { return gameReady ? player.ruffle().callExternalInterface(name, ...args) : false; }
@@ -21,6 +21,11 @@ async function loadGame(nextMode) {
   gameReady = false; mode = nextMode;
   player?.remove(); $('placeholder')?.remove();
   const instance = player = window.RufflePlayer.newest().createPlayer(); $('gameContainer').append(instance);
+  // Focusing the game after editing settings must not scroll beneath the click.
+  instance.addEventListener('pointerdown', event => {
+    const container = event.composedPath().find(node => node instanceof HTMLElement && node.id === 'container');
+    container?.focus({ preventScroll: true });
+  }, true);
   await instance.ruffle().load({ url: new URL(`./game/game-${nextMode === 'pvp' ? 'pvp' : 'original'}.swf`, location.href).href, base: new URL('./game/', location.href).href, parameters: nextMode === 'pvp' ? { pvp: 'true' } : {}, allowScriptAccess: nextMode === 'pvp', autoplay: 'on', unmuteOverlay: 'hidden', splashScreen: false, logLevel: 'error' });
   instance.ruffle().volume = Number($('volume').value) / 100;
   render();
@@ -53,8 +58,9 @@ export function handle(event) {
   if (event.type === 'room') { room = event; render(); return; }
   if (event.type === 'start') {
     match = event;
-    $('bonusList').textContent = event.bonusCards.length ? `공동 추가카드: ${event.bonusCards.map(id => cardNames[id]).join(' · ')}` : '추가카드 0장';
-    if (!bridge('pvpStart', event.match, event.characters.join(','), event.bonusCards.join(','))) { send({ type: 'leave' }); message('게임이 아직 준비되지 않았습니다. PLAY와 난이도를 먼저 선택하세요.', true); }
+    const dedicated = event.dedicatedCards;
+    $('bonusList').textContent = (event.bonusCards.length ? `공통카드 ${event.bonusCards.length}장: ${event.bonusCards.map(id => cardNames[id]).join(' · ')}` : '공통카드 0장') + (dedicated.some(cards => cards.length) ? ` / 전용카드: ${dedicated.map((cards, i) => `${i + 1}P ${cards.map(id => cardNames[id]).join(' · ')}`).join(' / ')}` : ' / 전용카드 OFF');
+    if (!bridge('pvpStart', event.match, event.characters.join(','), event.bonusCards.join(','), dedicated.map(cards => cards.join(',')).join(','))) { send({ type: 'leave' }); message('게임이 아직 준비되지 않았습니다. PLAY와 난이도를 먼저 선택하세요.', true); }
     return;
   }
   if (event.type === 'next') {
@@ -79,7 +85,13 @@ function render() {
   $('roomPanel').dataset.match = String(room?.match || 0);
   if (!inRoom) return;
   const selecting = room.phase === 'selecting';
-  $('bonusCount').value = String(room.bonusCount); $('bonusCount').disabled = seat !== 0 || !selecting;
+  const settingsLocked = seat !== 0 || !selecting;
+  $('bonusCount').replaceChildren(...Array.from({ length: room.maxBonusCount + 1 }, (_, i) => new Option(`${i}장`, String(i))));
+  $('bonusCount').value = String(room.bonusCount); $('bonusCount').disabled = settingsLocked;
+  $('bonusLimit').textContent = `최대 ${room.maxBonusCount}장 · 같은 종류를 양쪽에 지급합니다.`;
+  $('cardBans').disabled = settingsLocked;
+  for (const checkbox of document.querySelectorAll('[data-ban-card]')) checkbox.checked = room.bannedCards.includes(checkbox.dataset.banCard);
+  $('dedicatedEnabled').value = room.dedicatedEnabled ? 'on' : 'off'; $('dedicatedEnabled').disabled = settingsLocked;
   if ($('invitePanel')) $('invitePanel').hidden = seat !== 0;
   for (let i = 0; i < 2; i++) {
     const p = room.players[i]; $('player' + i).textContent = `${i + 1}P${i === seat ? ' (나)' : ''} · ${p ? (p.character ? names[p.character] : '캐릭터 선택 중') + (p.ready ? ' · 준비 완료' : '') : '참가 대기'}`;
@@ -94,9 +106,10 @@ function render() {
   else if (room.phase === 'animating') message(room.finished[seat] ? '상대가 전투 화면을 끝낼 때까지 기다립니다.' : `라운드 ${room.round} · 원본 전투가 진행됩니다. NEXT TURN / CONTINUE로 진행하세요.`);
   else if (room.phase === 'result' && room.rematch[seat]) message('상대가 캐릭터 다시 선택을 누르기를 기다립니다.');
 }
+function cardSettings() { return { bonusCount: Number($('bonusCount').value), bannedCards: Array.from(document.querySelectorAll('[data-ban-card]:checked'), input => input.dataset.banCard), dedicatedEnabled: $('dedicatedEnabled').value === 'on' }; }
 $('create').addEventListener('click', async () => { try { if (directTransport) await directTransport.create(Number($('bonusCount').value)); else { await connect(); send({ type: 'create', bonusCount: Number($('bonusCount').value) }); } } catch (error) { message(error.message, true); } });
 $('joinForm').addEventListener('submit', async event => { event.preventDefault(); try { if (directTransport) await directTransport.join($('roomCode').value); else { await connect(); send({ type: 'join', code: $('roomCode').value }); } } catch (error) { message(error.message, true); } });
-$('bonusCount').addEventListener('change', () => send({ type: 'configure', bonusCount: Number($('bonusCount').value) }));
+for (const input of [$('bonusCount'), $('dedicatedEnabled'), ...document.querySelectorAll('[data-ban-card]')]) input.addEventListener('change', () => send({ type: 'configure', ...cardSettings() }));
 $('ready').addEventListener('click', () => send({ type: 'ready' }));
 $('change').addEventListener('click', () => send({type:'selectCharacter'}));
 $('rematch').addEventListener('click', () => send({ type: 'rematch' }));

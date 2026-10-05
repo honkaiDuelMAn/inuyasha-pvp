@@ -28,9 +28,10 @@ b.reset = function() {
     g.movieMediator._pickUserCharacter();
     return true;
 };
-b.start = function(match, idsText, cardsText) {
+b.start = function(match, idsText, cardsText, dedicatedText) {
     var ids = idsText.split(",");
     var cards = cardsText == "" ? [] : cardsText.split(",");
+    var dedicated = dedicatedText == undefined ? ["",""] : dedicatedText.split(",");
     this.match = Number(match);
     this.round = 1;
     this.phase = "loading";
@@ -46,6 +47,7 @@ b.start = function(match, idsText, cardsText) {
     for (var i=0; i<2; i++) {
         var bonus = {};
         for (var j=0; j<cards.length; j++) { bonus[cards[j]] = g.movieMediator._allMoves[cards[j]]; }
+        if (dedicated[i] != "" && dedicated[i] != undefined) { bonus[dedicated[i]] = g.movieMediator._allMoves[dedicated[i]]; }
         players[i] = g.movieMediator._createPlayer({character:g.movieMediator._characters[ids[i]],type:i,advancedMoves:bonus});
     }
     g.pickMovesManager._humanPlayerIndex = this.seat;
@@ -131,6 +133,38 @@ g.movieMediator.matchDone = function(args) {
     b.emit("finished", {match:b.match,round:b.round});
 };
 g.movieMediator.userDoneWithMatchResult = function() { b.emit("rematch",{}); };
+// Add one native card clip for five common cards plus a character card.
+// Keep the original five-card layout whenever at most five cards are present.
+var picker = g.viewPickMoves;
+var row = picker._moveSelectorClips[2];
+var origins = [];
+for (var slotIndex=0; slotIndex<5; slotIndex++) {
+    origins[slotIndex] = {x:row[slotIndex]._x,y:row[slotIndex]._y,xscale:row[slotIndex]._xscale,yscale:row[slotIndex]._yscale};
+}
+row[4].duplicateMovieClip("card_25_pvp_mc",12000);
+row[5] = picker._display_mc.card_25_pvp_mc;
+// Keep the additional card in the card layer, below native dialog overlays.
+row[5].swapDepths(row[4].getDepth()+1);
+picker._registerInputReceptor({obj:row[5]});
+picker.pvpOrigins = origins;
+picker.pvpOriginalShowMoves = picker._showMoves;
+picker._showMoves = function() {
+    var count = 0;
+    for (var id in this._playerMoves) { if (this._playerMoves[id].advanced) { count++; } }
+    var clips = this._moveSelectorClips[2];
+    var saved = this.pvpOrigins;
+    var step = (saved[4].x-saved[0].x)/4;
+    var ratio = count > 5 ? 5/6 : 1;
+    for (var i=0; i<6; i++) {
+        var origin = i < 5 ? saved[i] : saved[4];
+        clips[i]._visible = i < count;
+        clips[i]._x = count > 5 ? saved[0].x+i*step*ratio : origin.x;
+        clips[i]._y = origin.y;
+        clips[i]._xscale = origin.xscale*ratio;
+        clips[i]._yscale = origin.yscale*ratio;
+    }
+    this.pvpOriginalShowMoves.call(this);
+};
 ei.addCallback("pvpConfigure",b,b.configure);
 ei.addCallback("pvpSelect",b,b.select);
 ei.addCallback("pvpStart",b,b.start);

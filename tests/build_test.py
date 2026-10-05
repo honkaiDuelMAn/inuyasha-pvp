@@ -30,7 +30,7 @@ def tags(path):
 
 
 class Preservation(unittest.TestCase):
-    def test_all_original_tags_are_byte_identical_with_only_one_inserted_action(self):
+    def test_pvp_preserves_balanced_game_tags_with_only_one_inserted_action(self):
         baseline = tags(ROOT / 'public/game/game-original.swf')
         patched = tags(ROOT / 'public/game/game-pvp.swf')
         self.assertEqual(len(patched), len(baseline) + 1)
@@ -49,10 +49,12 @@ class Preservation(unittest.TestCase):
         self.assertEqual(inserted, 1)
         self.assertEqual(filtered, baseline)
 
-    def test_original_mode_and_character_files_are_unchanged(self):
+    def test_character_files_are_unchanged(self):
         self.assertEqual(len(HASHES), 12)
         for name, expected in HASHES.items():
-            target = ROOT / 'public/game' / ('game-original.swf' if name == 'game.swf' else 'characters/' + name)
+            if name == 'game.swf':
+                continue  # Three authorized Sango tags are checked by sango_test.
+            target = ROOT / 'public/game/characters' / name
             self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(), expected)
 
     def test_flash_versions_preserve_original_execution_rules(self):

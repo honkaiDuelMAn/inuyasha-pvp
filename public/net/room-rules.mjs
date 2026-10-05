@@ -12,11 +12,22 @@ function roomCode() {
 
 const byId = new Map(catalog.map(move => [move.id, move]));
 const characters = ['i', 'ke', 'm', 'ka', 'n', 's', 'sa', 'ko'];
-const countValid = count => Number.isInteger(count) && count >= 0 && count <= 3;
-export function drawBonus(ids, count, randomInt = cryptoRandomInt) {
-  if (!countValid(count) || !Array.isArray(ids) || ids.length !== 2 || ids.some(id => !characters.includes(id))) throw Error('잘못된 카드 설정입니다.');
+const commonCards = ['perfectGuard', 'heal', 'kikyosRevenge', 'doubleRight', 'doubleLeft'];
+const countValid = count => Number.isInteger(count) && count >= 0 && count <= 5;
+function settings(message, previous = { bonusCount: 0, bannedCards: [], dedicatedEnabled: false }) {
+  const bonusCount = message.bonusCount === undefined ? previous.bonusCount : message.bonusCount;
+  const bannedCards = message.bannedCards === undefined ? previous.bannedCards : message.bannedCards;
+  const dedicatedEnabled = message.dedicatedEnabled === undefined ? previous.dedicatedEnabled : message.dedicatedEnabled;
+  if (!countValid(bonusCount)) throw Error('공통카드는 0~5장으로 설정하세요.');
+  if (!Array.isArray(bannedCards) || new Set(bannedCards).size !== bannedCards.length || bannedCards.some(id => !commonCards.includes(id))) throw Error('밴할 공통카드를 다시 선택하세요.');
+  if (typeof dedicatedEnabled !== 'boolean') throw Error('전용카드를 ON 또는 OFF로 설정하세요.');
+  return { bonusCount: Math.min(bonusCount, 5 - bannedCards.length), bannedCards: commonCards.filter(id => bannedCards.includes(id)), dedicatedEnabled };
+}
+export function drawBonus(ids, count, randomInt = cryptoRandomInt, bannedCards = []) {
+  const config = settings({ bonusCount: count, bannedCards });
+  if (config.bonusCount !== count || !Array.isArray(ids) || ids.length !== 2 || ids.some(id => !characters.includes(id))) throw Error('잘못된 카드 설정입니다.');
   if (count === 0) return [];
-  const pool = catalog.filter(move => move.advanced && ids.every(id => move.characters.includes(id))).map(move => move.id);
+  const pool = commonCards.filter(id => !config.bannedCards.includes(id));
   const drawn = [];
   for (let i = 0; i < count; i++) drawn.push(pool.splice(randomInt(pool.length), 1)[0]);
   return drawn;
@@ -51,14 +62,14 @@ export class RoomService {
   send(client, event) { client.send(event); }
   broadcast(room, event) { for (const p of room.players) if (p) this.send(p.client, event); }
   view(room) {
-    return { type: 'room', code: room.code, phase: room.phase, bonusCount: room.bonusCount, match: room.match, round: room.round,
+    return { type: 'room', code: room.code, phase: room.phase, bonusCount: room.bonusCount, bannedCards: [...room.bannedCards], maxBonusCount: 5 - room.bannedCards.length, dedicatedEnabled: room.dedicatedEnabled, match: room.match, round: room.round,
       players: room.players.map((p, seat) => p ? { seat, character: p.character, ready: p.ready } : null),
       submitted: room.hands.map(Boolean), finished: [...room.finished], rematch: room.players.map(p => Boolean(p?.rematch)) };
   }
   notify(room) { this.broadcast(room, this.view(room)); }
   newPlayer(client) { return { client, character: null, ready: false, loaded: false, rematch: false }; }
   reset(room) {
-    room.phase = 'selecting'; room.round = 0; room.hands = [null, null]; room.reports = [null, null]; room.finished = [false, false]; room.bonusCards = []; room.energies = [100, 100];
+    room.phase = 'selecting'; room.round = 0; room.hands = [null, null]; room.reports = [null, null]; room.finished = [false, false]; room.bonusCards = []; room.dedicatedCards = [[], []]; room.energies = [100, 100];
     for (const p of room.players) if (p) { p.character = null; p.ready = false; p.loaded = false; p.rematch = false; }
     this.broadcast(room, { type: 'reset' }); this.notify(room);
   }
@@ -80,11 +91,11 @@ export class RoomService {
       if (this.members.has(client.id)) throw Error('이미 방에 참가 중입니다.');
       let room, seat;
       if (m.type === 'create') {
-        if (!countValid(m.bonusCount)) throw Error('추가카드는 0~3장으로 설정하세요.');
+        const config = settings(m);
         if (this.rooms.size >= 100) throw Error('현재 만들 수 있는 방 수를 초과했습니다.');
         let code; do { code = roomCode(); } while (this.rooms.has(code));
-        room = { code, players: [this.newPlayer(client), null], bonusCount: m.bonusCount, match: 0 };
-        room.phase = 'selecting'; room.round = 0; room.hands = [null, null]; room.reports = [null, null]; room.finished = [false, false]; room.bonusCards = []; room.energies = [100, 100];
+        room = { code, players: [this.newPlayer(client), null], ...config, match: 0 };
+        room.phase = 'selecting'; room.round = 0; room.hands = [null, null]; room.reports = [null, null]; room.finished = [false, false]; room.bonusCards = []; room.dedicatedCards = [[], []]; room.energies = [100, 100];
         this.rooms.set(code, room); seat = 0;
       } else {
         const code = typeof m.code === 'string' ? m.code.trim().toUpperCase() : '';
@@ -101,8 +112,9 @@ export class RoomService {
     const { room, seat } = membership, player = room.players[seat];
     if (m.type === 'leave') { this.disconnect(client); this.send(client, { type: 'left' }); return; }
     if (m.type === 'configure') {
-      if (seat !== 0 || room.phase !== 'selecting' || !countValid(m.bonusCount)) throw Error('호스트가 경기 전에만 0~3장으로 설정할 수 있습니다.');
-      room.bonusCount = m.bonusCount; for (const p of room.players) if (p) p.ready = false; this.notify(room); return;
+      if (seat !== 0 || room.phase !== 'selecting') throw Error('카드 설정은 호스트가 경기 전에만 바꿀 수 있습니다.');
+      const config = settings(m, room);
+      Object.assign(room, config); for (const p of room.players) if (p) p.ready = false; this.notify(room); return;
     }
     if (m.type === 'character') {
       if (room.phase !== 'selecting' || !characters.includes(m.character)) throw Error('지금은 캐릭터를 선택할 수 없습니다.');
@@ -118,8 +130,9 @@ export class RoomService {
       player.ready = true;
       if (room.players.every(p => p?.ready)) {
         room.match++; room.round = 1; room.phase = 'loading';
-        const ids = room.players.map(p => p.character); room.bonusCards = drawBonus(ids, room.bonusCount, this.randomInt);
-        this.broadcast(room, { type: 'start', match: room.match, characters: ids, bonusCards: room.bonusCards });
+        const ids = room.players.map(p => p.character); room.bonusCards = drawBonus(ids, room.bonusCount, this.randomInt, room.bannedCards);
+        room.dedicatedCards = ids.map(id => room.dedicatedEnabled ? catalog.filter(move => move.advanced && !commonCards.includes(move.id) && move.characters.includes(id)).map(move => move.id) : []);
+        this.broadcast(room, { type: 'start', match: room.match, characters: ids, bonusCards: room.bonusCards, dedicatedCards: room.dedicatedCards });
       }
       this.notify(room); return;
     }
@@ -137,7 +150,7 @@ export class RoomService {
     if (m.round !== room.round) throw Error('이전 라운드의 입력입니다.');
     if (m.type === 'moves') {
       if (room.phase !== 'picking' || room.hands[seat]) throw Error('이미 제출했거나 지금은 카드 선택 차례가 아닙니다.');
-      const available = catalog.filter(move => !move.advanced && move.characters.includes(player.character)).map(move => move.id).concat(room.bonusCards);
+      const available = catalog.filter(move => !move.advanced && move.characters.includes(player.character)).map(move => move.id).concat(room.bonusCards, room.dedicatedCards[seat]);
       if (!validateMoves(m.moves, available, room.energies[seat])) throw Error('선택한 카드 또는 기력이 유효하지 않습니다.');
       room.hands[seat] = [...m.moves];
       if (room.hands.every(Boolean)) { room.phase = 'animating'; this.broadcast(room, { type: 'play', match: room.match, round: room.round, moves: room.hands.map(hand => [...hand]) }); }

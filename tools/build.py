@@ -1,4 +1,4 @@
-"""Append compiled PvP actions without recompiling any original game code/assets."""
+"""Patch three Sango tags and append PvP actions without recompiling originals."""
 import argparse
 import json
 import re
@@ -8,6 +8,7 @@ import subprocess
 import zlib
 from pathlib import Path
 from xml.etree import ElementTree
+from sango_patch import patch_sango
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -47,6 +48,8 @@ def serialize(header, tags, compressed=False):
 def build(source_root, java, ffdec):
     original = unpack(source_root / 'game.swf')
     header, tags = split_tags(original)
+    tags = patch_sango(tags)
+    balanced = serialize(header, tags)
     scratch = ROOT / 'scratch/build'
     scratch.mkdir(parents=True, exist_ok=True)
     # Compiler receives a separate one-frame movie; originals never go through it.
@@ -76,10 +79,10 @@ def build(source_root, java, ffdec):
     bridge_input.write_bytes(serialize(header[:3] + b'\x08' + header[4:-2] + b'\x01\x00', [(12, b'\x01\x03\x00'), (1, b'\x40\x00'), (0, b'\x00\x00')]))
     compile_movie(bridge_input, output / 'pvp-bridge.swf', ROOT / 'flash/pvp.as')
     (output / 'game-pvp.swf').write_bytes(serialize(header, patched, True))
-    shutil.copyfile(source_root / 'game.swf', output / 'game-original.swf')
+    (output / 'game-original.swf').write_bytes(serialize(header, tags, True))
     for path in source_root.glob('*_figure.swf'):
         shutil.copyfile(path, output / 'characters' / path.name)
-    xml = re.search(rb'<MOVES>.*?</MOVES>', original, re.S).group().decode('utf8')
+    xml = re.search(rb'<MOVES>.*?</MOVES>', balanced, re.S).group().decode('utf8')
     moves = []
     for move in ElementTree.fromstring(xml):
         moves.append({'id': move.get('ID'), 'name': move.get('NAME'), 'characters': move.get('CHARACTERS').split(','), 'advanced': move.get('ADVANCED') == '1', 'energy': int(move.find('USERIMPACT').get('ENERGY'))})
@@ -87,7 +90,7 @@ def build(source_root, java, ffdec):
     (ROOT / 'server/catalog.json').write_text(json.dumps(moves, indent=2), encoding='utf8')
     (ROOT / 'public/net').mkdir(exist_ok=True)
     (ROOT / 'public/net/catalog.mjs').write_text('export const catalog = ' + json.dumps(moves, indent=2) + ';\n', encoding='utf8')
-    print(f'Built game-pvp.swf: {len(tags)} unchanged tags + one PvP action; {len(moves)} original move definitions.')
+    print(f'Built both game modes: {len(tags) - 3} unchanged original tags, three Sango tags patched, one PvP action added; {len(moves)} move definitions.')
 
 
 if __name__ == '__main__':

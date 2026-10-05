@@ -327,7 +327,7 @@ export const catalog = [
       "sa"
     ],
     "advanced": false,
-    "energy": -25
+    "energy": -15
   },
   {
     "id": "hiraikotsu",
