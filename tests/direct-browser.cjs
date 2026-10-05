@@ -1,6 +1,7 @@
 const assert=require('node:assert/strict'),http=require('node:http'),fs=require('node:fs'),path=require('node:path');
 const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
 const {newPlayer,boot,gameClick,hand,finishRound}=require('./browser.cjs');
+const {assertStunOnly}=require('./rtc-config.cjs');
 (async()=>{
   const root=path.resolve(process.env.STATIC_ROOT||'public');
   const types={'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.wasm':'application/wasm','.swf':'application/x-shockwave-flash'};
@@ -65,9 +66,9 @@ const {newPlayer,boot,gameClick,hand,finishRound}=require('./browser.cjs');
     await host.waitForFunction(()=>document.getElementById('player1').textContent.includes('캐릭터 선택 중'));
     for(const p of pages)await gameClick(p,100,140);await host.locator('#ready').click();await guest.locator('#ready').click();
     await Promise.all(pages.map(p=>p.locator('#roomPanel[data-phase="picking"][data-match="3"]').waitFor({timeout:20000})));
-    assert.deepEqual(badRequests,[]);assert.deepEqual(errors,[]);for(const p of pages)assert.ok((await p.evaluate(()=>__rtcConfigs)).every(c=>JSON.stringify(c.iceServers)==='[]'));
+    assert.deepEqual(badRequests,[]);assert.deepEqual(errors,[]);for(const p of pages)assertStunOnly(await p.evaluate(()=>__rtcConfigs));
     fs.mkdirSync('scratch/direct',{recursive:true});await host.screenshot({path:'scratch/direct/pvp.png',fullPage:true});
-    console.log('PASS disconnect, fresh invitation, stale answer recovery, replacement; no API/WebSocket/external assets and empty ICE servers.');
+    console.log('PASS disconnect, fresh invitation, stale answer recovery, replacement; no API/WebSocket/external assets and STUN-only ICE.');
   }catch(e){for(let i=0;i<pages.length;i++)console.log('DIAGNOSTIC',i,JSON.stringify(await pages[i].evaluate(()=>({game:__gameEvents,network:__networkEvents,message:document.querySelector('#message')?.textContent}))));throw e;}
   finally{await browser.close();if(server.listening)await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

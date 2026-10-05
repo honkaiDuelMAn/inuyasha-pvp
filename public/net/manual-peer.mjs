@@ -1,6 +1,7 @@
 import {encodeCode,decodeCode} from './connection-code.mjs';
 export {encodeCode,decodeCode};
 const failure = '직접 연결하지 못했습니다. 코드 교환을 다시 시도하세요. 서로 다른 인터넷 회선에서는 공유기가 연결을 막을 수 있습니다.';
+const iceServers = [{urls:'stun:stun.cloudflare.com:3478'}];
 export class ManualPeer {
   constructor({onMessage=()=>{},onState=()=>{},connectTimeout=180000}={}) {
     this.onMessage=onMessage;this.onState=onState;this.connectTimeout=connectTimeout;
@@ -8,7 +9,7 @@ export class ManualPeer {
   }
   setup() {
     if (this.closed || this.pc) throw Error('새 초대 코드를 만들어 다시 연결하세요.');
-    const pc=this.pc=new RTCPeerConnection({iceServers:[]});
+    const pc=this.pc=new RTCPeerConnection({iceServers});
     pc.addEventListener('connectionstatechange',()=>{
       if(this.closed)return;
       if(pc.connectionState==='failed')this.fail();

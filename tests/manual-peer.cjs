@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict');
 const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
+const {assertStunOnly}=require('./rtc-config.cjs');
 (async()=>{
   const {createApp}=await import('../server/main.mjs');const app=createApp();await new Promise(r=>app.server.listen(0,'127.0.0.1',r));
   const browser=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true});
@@ -20,7 +21,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
     await h.evaluate(()=>peer.send({hello:'원본 PvP'}));await g.waitForFunction(()=>messages.length===1);
     assert.deepEqual(await g.evaluate(()=>messages[0]),{hello:'원본 PvP'});
     assert.equal(await h.evaluate(async a=>{try{await peer.accept(a);return false;}catch{return true;}},answer),true);
-    for(const p of pages)assert.ok((await p.evaluate(()=>__configs)).every(c=>JSON.stringify(c.iceServers)==='[]'));
+    for(const p of pages)assertStunOnly(await p.evaluate(()=>__configs));
     await h.evaluate(()=>peer.close());await g.waitForFunction(()=>states.includes('closed'));
     console.log('Data transfer and remote close passed.');
     const cancelled=await h.evaluate(async()=>{const p=new api.ManualPeer();const pending=p.offer('ABC123');p.close();try{await pending;return false;}catch{return true;}});assert.equal(cancelled,true);
@@ -30,6 +31,6 @@ const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
     assert.match(legacyAnswer,/^IY1-/,'legacy invitations need an answer the old host can read');
     await h.evaluate(a=>peer.accept(a),legacyAnswer);await Promise.all(pages.map(p=>p.waitForFunction(()=>states.includes('connected'))));
     console.log('PASS legacy invitation receives compatible legacy answer and connects.');
-    console.log('PASS actual manual offer/answer data channel with zero ICE servers; invalid/stale codes, cancel and timeout.');
+    console.log('PASS actual manual offer/answer data channel with STUN-only ICE; invalid/stale codes, cancel and timeout.');
   }finally{await browser.close();await app.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

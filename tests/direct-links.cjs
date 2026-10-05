@@ -3,6 +3,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),{execFileSync}=require('node:child_process');
 const {chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
 const {newPlayer,boot,gameClick,hand,finishRound}=require('./browser.cjs');
+const {assertStunOnly}=require('./rtc-config.cjs');
 (async()=>{
   let app;
   if(!process.env.DIRECT_URL){const {createApp}=await import('../server/main.mjs');app=createApp();await new Promise(r=>app.server.listen(0,'127.0.0.1',r));}
@@ -78,8 +79,8 @@ const {newPlayer,boot,gameClick,hand,finishRound}=require('./browser.cjs');
     await host.locator('#responseCode').fill(await guest.locator('#outputLink').inputValue());await host.locator('#acceptAnswer').click();
     await host.waitForFunction(()=>document.getElementById('player1').textContent.includes('캐릭터 선택 중'));
     assert.deepEqual(badRequests,[]);assert.deepEqual(errors,[]);
-    for(const p of [host,guest])assert.ok((await p.evaluate(()=>__rtcConfigs)).every(c=>JSON.stringify(c.iceServers)==='[]'));
-    console.log('PASS stale reply recovery, pasted-link fallback, empty ICE servers and no external requests.');
+    for(const p of [host,guest])assertStunOnly(await p.evaluate(()=>__rtcConfigs));
+    console.log('PASS stale reply recovery, pasted-link fallback, STUN-only ICE and no signaling/API requests.');
   }catch(error){for(let i=0;i<pages.length;i++){if(pages[i].isClosed())continue;await pages[i].screenshot({path:`scratch/links/failure-${i}.png`,fullPage:true});console.log('DIAGNOSTIC',i,JSON.stringify(await pages[i].evaluate(()=>({events:window.__gameEvents,network:window.__networkEvents,message:document.getElementById('message')?.textContent,phase:document.getElementById('roomPanel')?.dataset}))));}throw error;}
   finally{await browser.close();if(app)await app.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

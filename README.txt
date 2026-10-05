@@ -1,6 +1,6 @@
-웹 버전 1.2.1: public/direct.html / GitHub Pages
+웹 버전 1.2.2: public/direct.html / GitHub Pages
 기존 초대 링크·응답 링크 교환과 QR, 브라우저 직접 연결 방식을 유지합니다.
-서로 다른 인터넷 회선에서는 연결이 실패할 수 있습니다. 자세한 안내: README.md
+공개 STUN으로 원격 직접 연결을 시도하지만 일부 NAT/방화벽에서는 실패할 수 있습니다. 자세한 안내: README.md
 아래는 기존 Windows 호스트 프로그램 방식입니다.
 
 이누야샤 데몬 토너먼트 · 원본 리소스 1대1 PvP

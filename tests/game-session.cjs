@@ -2,6 +2,7 @@
 // DIRECT_GAMEPLAY=1 uses automatic invitation/answer links, not a room server.
 const assert = require('node:assert/strict');
 const {newPlayer} = require('./browser.cjs');
+const {assertStunOnly} = require('./rtc-config.cjs');
 const direct = process.env.DIRECT_GAMEPLAY === '1';
 const audits = new WeakMap();
 
@@ -68,7 +69,7 @@ async function assertTransport(pages) {
     assert.deepEqual(audit.requests, [], 'No external signaling, API, or WebSocket requests');
     const configs = await page.evaluate(() => window.__rtcConfigs);
     assert.ok(configs.length > 0, 'Gameplay used an actual WebRTC peer');
-    assert.ok(configs.every(config => JSON.stringify(config.iceServers) === '[]'));
+    assertStunOnly(configs);
   }
   console.log('PASS unchanged invitation/answer-link connection; no external signaling or WebSocket.');
 }
