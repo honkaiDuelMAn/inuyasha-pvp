@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <title>이누야샤 PvP · 모바일 WebRTC 진단</title>
+  <script src="./network-test.mjs" type="module"></script>
+  <style>
+    :root { color-scheme: dark; --bg:#0d1114; --panel:#171d21; --line:#364047; --text:#f1ede4; --muted:#aab2b7; --gold:#d6b867; --good:#7bd49a; --warn:#f0c96d; --bad:#ff9589; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(circle at 70% 0,#172722 0,transparent 38%),var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif; }
+    main { width:min(920px,100%); margin:0 auto; padding:22px 16px 56px; }
+    header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; }
+    h1 { margin:0; font-size:clamp(1.55rem,6vw,2.35rem); line-height:1.2; }
+    h2 { margin:0 0 10px; font-size:1.12rem; }
+    p { line-height:1.65; }
+    .eyebrow { margin:0 0 8px; color:var(--gold); font-weight:800; letter-spacing:.08em; font-size:.78rem; }
+    .panel { background:rgba(23,29,33,.96); border:1px solid var(--line); border-radius:17px; padding:20px; margin-bottom:16px; box-shadow:0 18px 45px rgba(0,0,0,.18); }
+    .intro p { color:var(--muted); margin:8px 0 0; }
+    .privacy { border-left:3px solid var(--good); padding-left:12px; color:var(--text)!important; }
+    button,.button-link { appearance:none; border:1px solid #5b6870; border-radius:11px; background:#222a2f; color:var(--text); min-height:48px; padding:11px 18px; font:inherit; font-weight:800; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+    button.primary { background:#76643a; border-color:#927b47; color:#fff8e6; }
+    button:disabled { cursor:wait; opacity:.55; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+    .meta { color:var(--muted); font-size:.9rem; margin-top:12px; overflow-wrap:anywhere; }
+    #summary[hidden],#reportPanel[hidden] { display:none; }
+    .summary-good { border-color:#3e7653; }
+    .summary-warn { border-color:#8a7135; }
+    .summary-bad { border-color:#8d4945; }
+    #summaryText { margin:0; font-size:1.02rem; }
+    .results { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .test-card { min-height:215px; background:rgba(23,29,33,.96); border:1px solid var(--line); border-radius:15px; padding:17px; }
+    .test-card[data-state="running"] { border-color:var(--gold); }
+    .test-card[data-state="reachable"] { border-color:#3e7653; }
+    .test-card[data-state="host-only"] { border-color:#8a7135; }
+    .test-card[data-state="blocked"],.test-card[data-state="timeout"] { border-color:#8d4945; }
+    .card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+    .status { border-radius:999px; padding:5px 9px; background:#293137; color:var(--muted); font-size:.76rem; font-weight:900; white-space:nowrap; }
+    [data-state="reachable"] .status { color:var(--good); }
+    [data-state="host-only"] .status { color:var(--warn); }
+    [data-state="blocked"] .status,[data-state="timeout"] .status { color:var(--bad); }
+    .description { color:var(--muted); font-size:.88rem; min-height:44px; }
+    .metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:14px 0 0; }
+    .metric { background:#101518; border:1px solid #2b343a; border-radius:10px; padding:9px; }
+    .metric span { display:block; color:var(--muted); font-size:.72rem; }
+    .metric strong { display:block; margin-top:3px; font-size:.95rem; overflow-wrap:anywhere; }
+    .error-list { margin:12px 0 0; padding-left:18px; color:var(--bad); font-size:.82rem; overflow-wrap:anywhere; }
+    textarea { width:100%; min-height:280px; resize:vertical; border:1px solid var(--line); border-radius:11px; background:#0e1316; color:var(--text); padding:13px; font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    footer { margin-top:24px; color:var(--muted); font-size:.82rem; text-align:center; }
+    @media (max-width:680px) { .results { grid-template-columns:1fr; } header { align-items:stretch; flex-direction:column; } .button-link { width:max-content; } .panel { padding:17px; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><p class="eyebrow">INUYASHA PVP NETWORK PROBE</p><h1>모바일 WebRTC 진단</h1></div>
+    <a class="button-link" href="./">게임으로 돌아가기</a>
+  </header>
+
+  <section class="panel intro">
+    <h2>5G 상태 그대로 검사해 주세요</h2>
+    <p>현재 게임 설정, Cloudflare 대체 포트, 다른 STUN 공급자와 STUN 없는 기본 후보를 동시에 비교합니다. 검사는 보통 12초 안에 끝납니다. 화면을 끄거나 다른 앱으로 이동하지 마세요.</p>
+    <p class="privacy"><strong>IP 주소와 포트는 수집하거나 표시하지 않습니다.</strong> 후보 종류(host/srflx), 완료 여부, 시간과 ICE 오류 코드만 화면에 남습니다. 서버로 진단 결과를 전송하지 않습니다.</p>
+    <div class="actions">
+      <button id="start" class="primary" type="button">진단 시작</button>
+      <button id="copy" type="button" disabled>결과 복사</button>
+    </div>
+    <p id="connectionInfo" class="meta"></p>
+  </section>
+
+  <section id="summary" class="panel" hidden aria-live="polite">
+    <h2>자동 판정</h2>
+    <p id="summaryText"></p>
+  </section>
+
+  <section id="results" class="results" aria-live="polite"></section>
+
+  <section id="reportPanel" class="panel" hidden>
+    <h2>복사용 전체 결과</h2>
+    <p class="meta">아래 내용을 복사해서 채팅에 그대로 붙여 넣어 주세요.</p>
+    <textarea id="report" readonly spellcheck="false" aria-label="WebRTC 진단 결과"></textarea>
+  </section>
+
+  <footer>임시 진단 페이지 · 별도 API, 데이터베이스, TURN 중계 서버를 사용하지 않습니다.</footer>
+</main>
+</body>
+</html>
