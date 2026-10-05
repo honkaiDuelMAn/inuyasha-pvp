@@ -15,7 +15,7 @@ const session=new DirectRoom({onEvent:event=>app.handle(event),onStatus:(state,d
   $('newInvite').hidden=session.role!=='host'||!['closed','failed'].includes(state);
   $('answerForm').hidden=session.role!=='host'||['closed','failed','gathering'].includes(state);
   $('outputGroup').hidden=['gathering','closed','failed'].includes(state);
-  const messages={gathering:'공유할 링크를 만드는 중입니다.', 'waiting-answer':'① 초대 링크 또는 QR을 친구에게 보내세요. ② 친구의 응답 링크를 방을 만든 브라우저에서 여세요. 이 방 탭을 닫거나 새로고침하지 마세요.',connecting:session.role==='guest'?'응답 링크를 호스트에게 보내세요. 호스트가 열면 연결됩니다. 3분 안에 전달하고, 이 참가 탭을 계속 열어 두세요.':'상대와 직접 연결하는 중입니다.',closed:'상대의 연결이 종료되었습니다. 새 초대 링크로 다른 참가자를 초대할 수 있습니다.',failed:detail};
+  const messages={gathering:'공유할 링크를 만드는 중입니다. 모바일 데이터에서는 최대 30초 정도 걸릴 수 있습니다.', 'waiting-answer':'① 초대 링크 또는 QR을 친구에게 보내세요. ② 친구의 응답 링크를 방을 만든 브라우저에서 여세요. 이 방 탭을 닫거나 새로고침하지 마세요.',connecting:session.role==='guest'?'응답 링크를 호스트에게 보내세요. 호스트가 열면 연결됩니다. 3분 안에 전달하고, 이 참가 탭을 계속 열어 두세요.':'상대와 직접 연결하는 중입니다.',closed:'상대의 연결이 종료되었습니다. 새 초대 링크로 다른 참가자를 초대할 수 있습니다.',failed:detail};
   $('connectionStatus').textContent=messages[state]||'';
   if(detail)app?.message(detail,true);
 }});

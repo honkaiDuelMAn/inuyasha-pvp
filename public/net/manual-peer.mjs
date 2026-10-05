@@ -2,6 +2,7 @@ import {encodeCode,decodeCode} from './connection-code.mjs';
 export {encodeCode,decodeCode};
 const failure = '직접 연결하지 못했습니다. 코드 교환을 다시 시도하세요. 서로 다른 인터넷 회선에서는 공유기가 연결을 막을 수 있습니다.';
 const iceServers = [{urls:'stun:stun.cloudflare.com:3478'}];
+const gatherTimeout=30000;
 export class ManualPeer {
   constructor({onMessage=()=>{},onState=()=>{},connectTimeout=180000}={}) {
     this.onMessage=onMessage;this.onState=onState;this.connectTimeout=connectTimeout;
@@ -51,7 +52,7 @@ export class ManualPeer {
       const finish=error=>{clearTimeout(timer);pc.removeEventListener('icegatheringstatechange',changed);signal.removeEventListener('abort',cancel);error?reject(error):resolve();};
       const changed=()=>{if(pc.iceGatheringState==='complete')finish();};
       const cancel=()=>finish(Error('연결을 취소했습니다.'));
-      const timer=setTimeout(()=>finish(Error('연결 코드 생성 시간이 초과되었습니다. 다시 시도하세요.')),10000);
+      const timer=setTimeout(()=>finish(Error('연결 코드 생성 시간이 초과되었습니다. 다시 시도하세요.')),gatherTimeout);
       pc.addEventListener('icegatheringstatechange',changed);signal.addEventListener('abort',cancel,{once:true});changed();
     });
     if(this.closed)throw Error('연결을 취소했습니다.');

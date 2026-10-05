@@ -1,6 +1,6 @@
-웹 버전 1.2.2: public/direct.html / GitHub Pages
+웹 버전 1.2.3: public/direct.html / GitHub Pages
 기존 초대 링크·응답 링크 교환과 QR, 브라우저 직접 연결 방식을 유지합니다.
-공개 STUN으로 원격 직접 연결을 시도하지만 일부 NAT/방화벽에서는 실패할 수 있습니다. 자세한 안내: README.md
+공개 STUN으로 원격 직접 연결을 시도합니다. 모바일 데이터의 링크 생성 대기 한도는 30초이며 일부 NAT/방화벽에서는 실패할 수 있습니다. 자세한 안내: README.md
 아래는 기존 Windows 호스트 프로그램 방식입니다.
 
 이누야샤 데몬 토너먼트 · 원본 리소스 1대1 PvP
