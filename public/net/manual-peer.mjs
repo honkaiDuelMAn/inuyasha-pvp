@@ -2,10 +2,10 @@ import {encodeCode,decodeCode} from './connection-code.mjs';
 export {encodeCode,decodeCode};
 const failure = '직접 연결하지 못했습니다. 코드 교환을 다시 시도하세요. 서로 다른 인터넷 회선에서는 공유기가 연결을 막을 수 있습니다.';
 const iceServers = [{urls:'stun:stun.cloudflare.com:3478'}];
-const gatherTimeout=30000;
+const defaultGatherTimeout=30000,defaultCandidateQuietTimeout=1500;
 export class ManualPeer {
-  constructor({onMessage=()=>{},onState=()=>{},connectTimeout=180000}={}) {
-    this.onMessage=onMessage;this.onState=onState;this.connectTimeout=connectTimeout;
+  constructor({onMessage=()=>{},onState=()=>{},connectTimeout=180000,gatherTimeout=defaultGatherTimeout,candidateQuietTimeout=defaultCandidateQuietTimeout}={}) {
+    this.onMessage=onMessage;this.onState=onState;this.connectTimeout=connectTimeout;this.gatherTimeout=gatherTimeout;this.candidateQuietTimeout=candidateQuietTimeout;
     this.abort=new AbortController();this.closed=false;this.accepted=false;
   }
   setup() {
@@ -49,11 +49,31 @@ export class ManualPeer {
     const pc=this.pc,signal=this.abort.signal;
     if(signal.aborted)throw Error('연결을 취소했습니다.');
     if(pc.iceGatheringState!=='complete')await new Promise((resolve,reject)=>{
-      const finish=error=>{clearTimeout(timer);pc.removeEventListener('icegatheringstatechange',changed);signal.removeEventListener('abort',cancel);error?reject(error):resolve();};
+      let timer,quietTimer;
+      let publicCandidate=/\btyp\s+(srflx|relay)\b/i.test(pc.localDescription?.sdp||'');
+      const finish=error=>{
+        clearTimeout(timer);clearTimeout(quietTimer);
+        pc.removeEventListener('icecandidate',candidate);
+        pc.removeEventListener('icegatheringstatechange',changed);
+        signal.removeEventListener('abort',cancel);
+        error?reject(error):resolve();
+      };
+      const waitForQuiet=()=>{clearTimeout(quietTimer);quietTimer=setTimeout(()=>finish(),this.candidateQuietTimeout);};
+      const candidate=event=>{
+        const value=event.candidate;
+        if(!value){if(pc.iceGatheringState==='complete')finish();return;}
+        const type=(value.type||value.candidate?.match(/\btyp\s+(host|srflx|prflx|relay)\b/i)?.[1]||'').toLowerCase();
+        if(type==='srflx'||type==='relay')publicCandidate=true;
+        if(publicCandidate)waitForQuiet();
+      };
       const changed=()=>{if(pc.iceGatheringState==='complete')finish();};
       const cancel=()=>finish(Error('연결을 취소했습니다.'));
-      const timer=setTimeout(()=>finish(Error('연결 코드 생성 시간이 초과되었습니다. 다시 시도하세요.')),gatherTimeout);
-      pc.addEventListener('icegatheringstatechange',changed);signal.addEventListener('abort',cancel,{once:true});changed();
+      timer=setTimeout(()=>finish(Error('연결 코드 생성 시간이 초과되었습니다. 다시 시도하세요.')),this.gatherTimeout);
+      pc.addEventListener('icecandidate',candidate);
+      pc.addEventListener('icegatheringstatechange',changed);
+      signal.addEventListener('abort',cancel,{once:true});
+      if(publicCandidate)waitForQuiet();
+      changed();
     });
     if(this.closed)throw Error('연결을 취소했습니다.');
     return this.operation(encodeCode({version:1,kind:pc.localDescription.type,session:this.session,room:this.room,sdp:pc.localDescription.sdp},{legacy:this.legacyCode}));
