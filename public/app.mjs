@@ -1,8 +1,10 @@
+import { createRoomChat } from './chat.mjs';
 const $ = id => document.getElementById(id);
 const directTransport = window.inuyashaDirect;
 const names = { i: '이누야샤', ke: '가영', m: '미륵', ka: '카구라', n: '나락', s: '셋쇼마루', sa: '산고', ko: '코우가' };
 const cardNames = { perfectGuard: '완벽방어', heal: '치유', kikyosRevenge: '금강', doubleRight: '더블 라이트', doubleLeft: '더블 레프트', summonKirara: '키라라 소환', summonDemons: '요괴 소환', summonJaken: '자켄 소환', summonShippo: '싯포 소환', summonWolves: '늑대 소환' };
 let socket, player, mode, gameReady = false, room = null, seat = null, code = null, changing = false, match = null;
+const chat = $('chatPanel') ? createRoomChat({ send }) : null;
 export function message(text, error = false) { $('message').textContent = text; $('message').classList.toggle('error', error); }
 function bridge(name, ...args) { return gameReady ? player.ruffle().callExternalInterface(name, ...args) : false; }
 function send(event) {
@@ -43,6 +45,7 @@ function clearRoom() {
   $('bonusList').textContent = ''; render();
 }
 export function handle(event) {
+  if (event.type === 'chat' || event.type === 'chatError') { chat?.receive(event); return; }
   if (event.type === 'error') {
     if (event.retryMoves) bridge('pvpRetry', event.match, event.round);
     message(event.message, true); return;
@@ -79,6 +82,7 @@ export function handle(event) {
 }
 function render() {
   const inRoom = seat !== null && room !== null;
+  chat?.setRoom(inRoom ? code : null, inRoom ? seat : null);
   $('entry').hidden = inRoom; $('roomPanel').hidden = !inRoom;
   $('roomPanel').dataset.phase = room?.phase || '';
   $('roomPanel').dataset.round = String(room?.round || 0);

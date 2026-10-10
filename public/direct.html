@@ -11,7 +11,15 @@
 <section id="roomPanel" class="panel" hidden><div class="room-heading"><div><span class="eyebrow">방 번호</span><strong id="code"></strong><span id="seat"></span></div><button id="leave" class="quiet">방 나가기</button></div>
 <div class="room-grid"><div class="card-settings"><label for="bonusCount">공통카드</label><select id="bonusCount"><option value="0">0장</option><option value="1">1장</option><option value="2">2장</option><option value="3">3장</option><option value="4">4장</option><option value="5">5장</option></select><p id="bonusLimit" class="hint">최대 5장 · 같은 종류를 양쪽에 지급합니다.</p><fieldset id="cardBans"><legend>공통카드 밴</legend><label><input type="checkbox" data-ban-card="doubleLeft">더블 레프트</label><label><input type="checkbox" data-ban-card="doubleRight">더블 라이트</label><label><input type="checkbox" data-ban-card="heal">치유</label><label><input type="checkbox" data-ban-card="perfectGuard">완벽방어</label><label><input type="checkbox" data-ban-card="kikyosRevenge">금강</label></fieldset><label for="dedicatedEnabled">전용카드</label><select id="dedicatedEnabled"><option value="off">OFF</option><option value="on">ON</option></select><p class="hint">ON이면 각 캐릭터의 전용카드 1장을 별도로 지급합니다.</p></div><div class="players"><p id="player0"></p><p id="player1"></p></div><div class="ready-actions"><button id="change" class="quiet">캐릭터 바꾸기</button><button id="ready">준비 완료</button><button id="rematch" hidden>캐릭터 다시 선택</button></div></div></section>
 <div id="message" role="status" aria-live="polite">연결 기능을 불러오는 중입니다. 잠시 기다려 주세요.</div>
+<div class="play-area">
 <section class="stage"><div id="gameContainer"><div id="placeholder"><span class="crest">犬</span><p>원래 게임 그대로, 친구와 함께.</p></div></div></section>
+<aside id="chatPanel" class="chat-panel" aria-label="방 채팅">
+<div class="chat-heading"><h2>방 채팅</h2><span>1P · 2P</span></div>
+<div class="chat-body"><div id="chatMessages" role="log" aria-label="채팅 메시지 목록" aria-live="polite" aria-relevant="additions"></div><p id="chatEmpty">상대와 인사를 나눠보세요.</p></div>
+<form id="chatForm"><input id="chatInput" aria-label="채팅 메시지" placeholder="메시지를 입력하세요" maxlength="500" autocomplete="off" spellcheck="false" disabled><button id="chatSend" type="submit" disabled>전송</button></form>
+<p id="chatStatus" role="status">방에 참가하면 채팅할 수 있습니다.</p>
+</aside>
+</div>
 <div class="game-footer"><span id="bonusList"></span><div><label class="volume" for="volume">소리 <input id="volume" type="range" min="0" max="100" value="70"></label><button id="fullscreen" class="quiet">전체 화면</button></div></div>
 <footer>연결 후 게임 화면의 PLAY → NORMAL 또는 HARD → 캐릭터 선택 → 준비 완료.<br>카드 선택과 전투 진행은 원본 게임과 동일합니다. 경기 후 양쪽이 캐릭터 다시 선택을 누르면 같은 연결로 재대전합니다.<br>호스트가 페이지를 닫으면 대전이 끝납니다. 이 페이지를 배포한 사람의 PC는 켜 둘 필요가 없습니다.</footer>
 </main></body></html>
